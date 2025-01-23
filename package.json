@@ -55,6 +55,33 @@
                 "type": "string",
                 "description": "Path to the GDB executable",
                 "default": "/usr/bin/gdb"
+              },
+              "gdbServer": {
+                "type": "string",
+                "description": "Address of the gdbserver to connect to"
+              },
+              "setupCommands": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string",
+                      "description": "A GDB command to execute."
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Optional description of the command."
+                    },
+                    "ignoreFailures": {
+                      "type": "boolean",
+                      "description": "Whether to ignore failures when executing this command.",
+                      "default": true
+                    }
+                  },
+                  "required": ["text"]
+                },
+                "description": "One or more GDB commands to execute in order to set up the debugger."
               }
             }
           }
