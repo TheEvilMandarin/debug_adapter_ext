@@ -40,27 +40,19 @@ export class DebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory
             stdio: ["pipe", "pipe", "pipe"],
         });
 
-        this.adapterProcess.on("exit", (code) => {
-            this.isRunning = false;
-            this.outputChannel.appendLine(`Debug Adapter exited with code ${code}`);
-        });
-
-        this.adapterProcess.on("error", (err) => {
-            this.isRunning = false;
-            this.outputChannel.appendLine(`Failed to start Debug Adapter: ${err.message}`);
-        });
-
         const startDebugAdapterServerTimeoutInMs = startDebugAdapterServerTimeoutInSeconds() * 1000;
 
-        await Promise.race([
-            new Promise<void>((resolve, reject) => {
-                let ready = false;
-        
+        return await Promise.race([
+            new Promise<vscode.DebugAdapterDescriptor>((resolve, reject) => {
                 this.adapterProcess?.stdout?.on("data", (data) => {
-                    this.outputChannel.appendLine(`Debug Adapter stdout: ${data}`);
-                    if (data.includes("DAP server is listening")) {
-                        ready = true;
-                        resolve();
+                    const text = data.toString();
+                    this.outputChannel.appendLine(`Debug Adapter stdout: ${text}`);
+
+                    const match = text.match(/SOCKET_PATH=(.+)/);
+                    if (match) {
+                        const socketPath = match[1].trim();
+                        this.isRunning = true;
+                        resolve(new vscode.DebugAdapterNamedPipeServer(socketPath));
                     }
                 });
 
@@ -68,32 +60,27 @@ export class DebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory
                     this.outputChannel.appendLine(`Debug Adapter stderr: ${errData}`);
                 });
 
-                if (this.adapterProcess) {
-                    this.adapterProcess.on("error", (err) => {
-                        if (!ready) {
-                            reject(err);
-                        }
-                    });
-        
-                    this.adapterProcess.on("exit", (code) => {
-                        if (!ready) {
-                            reject(
-                                new Error(`Debug Adapter exited with code ${code}, but was never ready.`)
-                            );
-                        }
-                    });
-                }
+                this.adapterProcess?.on("exit", (code) => {
+                    if (!this.isRunning) {
+                        reject(new Error(`Debug Adapter exited with code ${code}`));
+                    }
+                    this.isRunning = false;
+                    this.outputChannel.appendLine(`Debug Adapter exited with code ${code}`);
+                });
+
+                this.adapterProcess?.on("error", (err) => {
+                    reject(err);
+                    this.isRunning = false;
+                    this.outputChannel.appendLine(`Failed to start Debug Adapter: ${err.message}`);
+                });
             }),
-            new Promise<void>((_, reject) =>
+            new Promise<never>((_, reject) =>
                 setTimeout(
                     () => reject(new Error("Timeout waiting for Debug Adapter to be ready")),
                     startDebugAdapterServerTimeoutInMs
                 )
             ),
         ]);
-
-        this.isRunning = true;
-        return new vscode.DebugAdapterServer(4711);
     }
 
     dispose() {
