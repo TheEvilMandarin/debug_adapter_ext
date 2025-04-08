@@ -16,6 +16,31 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "views": {
+      "debug": [
+        {
+          "id": "debug_adapter.processesView",
+          "name": "Processes",
+          "group": "variables"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "debug_adapter.showProcessList",
+        "title": "Process List",
+        "icon": "$(list-unordered)"
+      }
+  ],
+  "menus": {
+    "view/title": [
+      {
+        "command": "debug_adapter.showProcessList",
+        "when": "view == debug_adapter.processesView",
+        "group": "navigation"
+      }
+    ]
+  },
     "debuggers": [
       {
         "type": "debug_adapter",
