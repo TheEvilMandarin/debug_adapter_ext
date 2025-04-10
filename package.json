@@ -47,19 +47,59 @@
         "label": "Debug Adapter",
         "runtime": "node",
         "configurationAttributes": {
-          "launch": {
-            "required": [
-              "program"
-            ],
+        "launch": {
+            "required": ["program"],
+            "dependencies": {
+              "programRunner": ["processSpawner"],
+              "processSpawner": ["programRunner"]
+            },
             "properties": {
               "program": {
                 "type": "string",
                 "description": "Full path to program executable."
               },
+              "programRunner": {
+                "type": "string",
+                "description": "Path to program runner"
+              },
+              "processSpawner": {
+                "type": "string",
+                "description": "A process that can create new processes."
+              },
+              "args": {
+                "type": "array",
+                "description": "Arguments passed to the program (does not affect programRunner).",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "gdbServer": {
+                "type": "string",
+                "description": "Address of the gdbserver to connect to"
+              },
               "gdbPath": {
                 "type": "string",
                 "description": "Path to the GDB executable",
                 "default": "/usr/bin/gdb"
+              },
+              "setupCommands": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "ignoreFailures": {
+                      "type": "boolean",
+                      "default": true
+                    }
+                  },
+                  "required": ["text"]
+                }
               }
             }
           },
